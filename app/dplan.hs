@@ -8,6 +8,7 @@ import Control.Monad.CSP
 import Data.List
 import Data.Maybe
 import System.Environment
+import Graphics.EasyRender
 
 data Day
     = Mo
@@ -193,16 +194,18 @@ main = do
     let kw = read $ head args 
     !ws <- loadConf
     let res = mycspA kw ws
-    mapM_ (printResult kw ws) res
+    putStrLn $ concatMap (formatResult kw ws) res
     putStrLn $
         "\nEs wurden " ++
         show (length res) ++ " mögliche Lösungen gefunden,\n\n"
 
-printResult kw ws res = do
-    putStrLn $ "\n\n\nEin Wochenplan für die Kalenderwoche " ++ show kw
-    putStrLn "-----------------------------------------------------\n\n"
-    putStrLn $ formatDplan res
-    putStrLn $ formatWorkerPlan res ws $ genWorkerplan ws res
+    saveDoc $ document (take 1 $ map (formatResult kw ws) res)
+
+formatResult kw ws res = 
+    "\n\n\nEin Wochenplan für die Kalenderwoche " ++ (show kw)
+    ++ "-----------------------------------------------------\n\n"
+    ++ (formatDplan res)
+    ++ (formatWorkerPlan res ws $ genWorkerplan ws res)
 
 loadConf = do
     let remComments str = concat $ filter (\l -> "--" /= take 2 l) $ lines str
@@ -267,3 +270,17 @@ genWorkerplan ws dpl = map scn ws
 for as f = map f as
 
 forMaybe as f = mapMaybe f as
+
+saveDoc d = writeFile "dplan.pdf" (render_string Format_PS d)
+
+document :: [String] -> Document ()
+document rs = do
+  let x = 400
+  let y = 600
+  mapM_ (newpage x y . drawRes) rs
+
+drawRes r = do
+  let font = Font Helvetica 5.0
+  let hw = "Hello World"
+  rectangle 10 10 50 50
+  mapM_ (\(dy,s) ->  textbox align_left font (Color_RGB 0.8 0.6 0.5) 10 (500-dy) 490 (500-dy) 0 s) $ zip [0,10..] $ lines r
