@@ -42,7 +42,7 @@ days = [Mo, Di, Mi, Do, Fr, Sa]
 
 adistricts = [8, 10, 11, 14, 15, 13, 12, 16]
 
-sortWorkers ws = sortBy workerCmp ws
+sortWorkers = sortBy workerCmp
   where
     workerCmp (Worker _ _ (Stamm x) _) (Worker _ _ (Stamm y) _) = compare x y
     workerCmp (Worker _ _ Springer _) (Worker _ _ (Stamm y) _) = GT
@@ -97,7 +97,7 @@ aDV kw ws dy di = mkDV constructDomain
                      v = vertZ di
                      sp = sprinZ di
                      jo = jokerZ di
-                 in if elem dy (freeDay di kw)
+                 in if dy `elem` freeDay di kw
                         then if null sp
                                  then v ++ jo
                                  else sp ++ jo
@@ -187,11 +187,10 @@ mycsp' kw workers = do
 main = do
     args <- getArgs
     pn <- getProgName
-    when (length args == 0) $ do
+    when (null args) $ do
         putStrLn $ pn ++ " <KW> "
         error "Blah"
-    let kw = read $ args !! 0
-  --let kw = 7
+    let kw = read $ head args 
     !ws <- loadConf
     let res = mycspA kw ws
     mapM_ (printResult kw ws) res
@@ -209,7 +208,7 @@ loadConf = do
     let remComments str = concat $ filter (\l -> "--" /= take 2 l) $ lines str
     str <- readFile "appconf/zsp.conf"
     let ws = remComments str
-    let parsed = (read ws) :: [Worker]
+    let parsed = read ws :: [Worker]
     return $ sortWorkers parsed
 
 workerFreq workers ws = map (name &&& cnt ws) workers
@@ -231,7 +230,7 @@ formatDplan wp =
 
 formatWorkerPlan res ws wps =
     header ++
-    (concat $
+    concat (
      for days $ \dy ->
          "\n" ++
          pad 5 (show dy) ++
@@ -243,14 +242,14 @@ formatWorkerPlan res ws wps =
                        pad 11 $
                        if null l
                            then "Frei"
-                           else concat $ intersperse "+" $ map show l
+                           else intercalate "+" $ map show l
                in dists))) ++
     footer
   where
     header = "     " ++ concatMap (pad 11 . name) ws ++ "\n"
     footer =
         "\n\n     " ++
-        (concatMap (pad 11 . show . snd) (workerFreq ws res)) ++ "\n\n"
+        concatMap (pad 11 . show . snd) (workerFreq ws res) ++ "\n\n"
     pad x s = s ++ post
       where
         post = replicate (x - length s) ' '
