@@ -207,7 +207,7 @@ printResult kw ws res = do
 
 loadConf = do
     let remComments str = concat $ filter (\l -> "--" /= take 2 l) $ lines str
-    str <- readFile "zsp.conf"
+    str <- readFile "appconf/zsp.conf"
     let ws = remComments str
     let parsed = (read ws) :: [Worker]
     return $ sortWorkers parsed
