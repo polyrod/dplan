@@ -5,9 +5,16 @@ module Main where
 import Control.Arrow
 import Control.Monad
 import Control.Monad.CSP
+import Control.Monad.Extra
 import Data.List
 import Data.Maybe
 import System.Environment
+
+import Graphics.Text.TrueType( loadFontFile )
+import Codec.Picture( PixelRGBA8( .. ), writePng )
+import Graphics.Rasterific
+import Graphics.Rasterific.Texture
+import qualified Data.ByteString.Lazy as BS
 
 data Day
     = Mo
@@ -193,16 +200,20 @@ main = do
     let kw = read $ head args 
     !ws <- loadConf
     let res = mycspA kw ws
-    mapM_ (printResult kw ws) res
+    let lns =  concatMap (formatResult kw ws) res
+    writeToFile $ lines $ lns 
+    putStrLn $ lns
     putStrLn $
         "\nEs wurden " ++
         show (length res) ++ " mögliche Lösungen gefunden,\n\n"
 
-printResult kw ws res = do
-    putStrLn $ "\n\n\nEin Wochenplan für die Kalenderwoche " ++ show kw
-    putStrLn "-----------------------------------------------------\n\n"
-    putStrLn $ formatDplan res
-    putStrLn $ formatWorkerPlan res ws $ genWorkerplan ws res
+formatResult kw ws res = do
+    "\n\n\nDienstplan ZSP Mering KW " ++ (show kw)
+    ++ "\n-----------------------------------------------------\n\n"
+    ++ (formatDplan res)
+    ++ "\n\n\n"
+    ++ (formatWorkerPlan res ws $ genWorkerplan ws res)
+    
 
 loadConf = do
     let remComments str = concat $ filter (\l -> "--" /= take 2 l) $ lines str
@@ -267,3 +278,15 @@ genWorkerplan ws dpl = map scn ws
 for as f = map f as
 
 forMaybe as f = mapMaybe f as
+
+
+writeToFile :: [String] -> IO ()
+writeToFile ss = do 
+  fontErr <- loadFontFile "Hack-Regular.ttf"
+  case fontErr of
+    Left err -> putStrLn err
+    Right font ->
+      BS.writeFile "dplan.pdf" $
+        renderDrawingAtDpiToPDF 600 400 300 $
+          withTexture (uniformTexture $ PixelRGBA8 0 0 0 255) $
+            mapM_ (\(dy,s) -> printTextAt font (PointSize 1.5) (V2 20 (40+dy)) s) $ zip [0,10..] ss
