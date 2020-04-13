@@ -5,7 +5,7 @@
 module Main where
 
 import Control.Arrow
-import Control.Monad hiding (when)
+import Control.Monad 
 import Control.Monad.CSP
 import Control.Monad.Trans
 import Control.Monad.Trans.Reader
@@ -15,6 +15,7 @@ import Data.Maybe
 import System.Environment
 
 import Conf
+import Gui
 
 type XSP r = ReaderT Env (CSP r)
 
@@ -168,26 +169,28 @@ main = do
   pn <- getProgName
   when (null args) $ do
     putStrLn $ pn ++ " <KW> "
-    error "Blah"
+    error "Supply Calenderweek as Int"
   let kw = read $ head args
   ws <- loadConf
   e <- loadConfig "appconf/mering.conf"
   case e of
     Just e' -> do
       let res = mycspA e' kw ws
-      mapM_ (printResult (map num $ abezirke e') kw ws) res
+      mapM_ (putStrLn . formatResult (map num $ abezirke e') kw ws) res
+      showGui $ map (formatResult (map num $ abezirke e') kw ws) res
+      --showGui $ map (formatResult (map num $ abezirke e') kw ws) res
       putStrLn $
         "\n     Es wurden " ++
         show (length res) ++ " mögliche Lösungen gefunden,\n\n"
     Nothing -> error "Abort. :("
 
-printResult :: Show a => [District] -> a -> [Worker] -> [[Worker]] -> IO ()
-printResult bs kw ws res = do
-  putStrLn $ "\n\n\n"
-  putStrLn $ pad 30 $ "     Wochenplan Kalenderwoche " ++ show kw
-  putStrLn "     ------------------------------\n\n"
-  putStrLn $ formatDplan bs res
-  putStrLn $ formatWorkerPlan res ws $ genWorkerplan bs ws res
+formatResult :: Show a => [District] -> a -> [Worker] -> [[Worker]] -> String 
+formatResult bs kw ws res = 
+  "\n\n\n"
+  ++ (pad 30 $ "     Wochenplan Kalenderwoche " ++ show kw)
+  ++ "\n     ------------------------------\n\n"
+  ++ (formatDplan bs res) ++ "\n"
+  ++ (formatWorkerPlan res ws $ genWorkerplan bs ws res) ++ "\n"
 
 loadConf :: IO [Worker]
 loadConf = do

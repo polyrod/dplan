@@ -15,12 +15,16 @@ cabal-version:       >=1.10
 
 library
  hs-source-dirs:      src
- exposed-modules:     Conf
+ exposed-modules:     Conf,Gui
  build-depends:       base >= 4.7 && < 5
                      ,ConfigFile
                      ,mtl
-                      ,transformers
-                      ,split
+                     ,transformers
+                     ,split
+                     ,wx
+                     ,wxc
+                     ,wxcore
+                     ,wxdirect
  default-language:    Haskell2010
 
 executable dplan-exe
